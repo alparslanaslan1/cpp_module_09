@@ -7,8 +7,10 @@ int main(int ac, char **av){
         std::cout << "bad input" << std::endl;
         return (0);
     }
+
     BitcoinExchange bE;
-    bE.bitData(av[1]);
+    bE.bitData("data.csv");
+    bE.inputData(av[1]);
     
 
 

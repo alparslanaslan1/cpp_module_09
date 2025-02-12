@@ -10,17 +10,23 @@
 class BitcoinExchange
 {
     private:
-        std::map<unsigned int, float> dataBase;
 
     public:
+        std::map<unsigned int, float> dataBase;
+        std::multimap<unsigned int, float> inputBase;
         BitcoinExchange();
         ~BitcoinExchange();
         void bitData(std::string dataFile);
-        static unsigned int strToDateValue(std::string value);
+        void inputData(std::string inputFile);
+
+        unsigned int dataDateValue(std::string &value);
+        float dataPriceValue(std::string &value);
 
 
+        static unsigned int inputDateValue(std::string &value);
+        float inputPriceValue(std::string &value);
 
-
+        void dateControl(unsigned int &date);
 };
 
 #endif
