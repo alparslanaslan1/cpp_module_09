@@ -26,7 +26,10 @@ class BitcoinExchange
         static unsigned int inputDateValue(std::string &value);
         float inputPriceValue(std::string &value);
 
-        void dateControl(unsigned int &date);
+        bool dateControl(unsigned int date);
+        bool amountControl(float &amount);
+
+        float getClosestValue(unsigned int date);
 };
 
 #endif

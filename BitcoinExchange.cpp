@@ -35,10 +35,6 @@ void BitcoinExchange::bitData(std::string dataFile) {
 
         dataBase.insert(std::make_pair(date, price)); 
 
-        // Map içindeki tüm elemanları yazdır
-        // for (it = dataBase.begin(); it != dataBase.end(); ++it) {
-        //     std::cout << "Key (Date): " << it->first << ", Value (Price): " << it->second << std::endl;
-        // }
     }
 }
 
@@ -87,7 +83,8 @@ void BitcoinExchange::inputData(std::string inputFile) {
     std::getline(inputDataFile, line);
 
     std::string::size_type i;
-    std::map<unsigned int, float>::iterator itInput;
+    std::string datePart;
+    std::string pricePart;
     while (std::getline(inputDataFile, line)) {
         i = line.find("|");
 
@@ -96,19 +93,43 @@ void BitcoinExchange::inputData(std::string inputFile) {
             continue;
         }
 
-        std::string datePart = line.substr(0, i);
-        std::string pricePart = line.substr(i + 1);
+        datePart = line.substr(0, i);
+        pricePart = line.substr(i + 1);
 
         unsigned int date = BitcoinExchange::inputDateValue(datePart);
         float amount = BitcoinExchange::inputPriceValue(pricePart);
+        inputBase.insert(std::make_pair(date, amount));
 
-        inputBase.insert(std::make_pair(date, amount)); 
+        // if (!dateControl(date)) {
+        //     //std::cerr << "Error: bad input => " << date << std::endl;
+        //     continue;
+        // }
 
+        // if (!amountControl(amount)) {
+        //     continue;
+        // }
+
+    }
+
+    // Map'i yazdır ve eşleşen ya da en yakın değeri bul
+    std::multimap<unsigned int, float>::iterator itInput;
+    for (itInput = inputBase.begin(); itInput != inputBase.end(); ++itInput) {
+        unsigned int date1 = itInput->first;
+        float closestValue = getClosestValue(date1);
+        if (!dateControl(itInput->first)) {
+            std::cerr << "Error: bad input => " << itInput->first << std::endl;
+            continue;
         }
-        for (itInput = inputBase.begin(); itInput != inputBase.end(); ++itInput) {
-            std::cout << "Key (Date): " << itInput->first << ", Value (Price): " << itInput->second << std::endl;
+
+        if (!amountControl(itInput->second)) {
+            continue;
+        }        
+        if (closestValue != -1.0f) {
+            std::cout << itInput->first / 10000 << "-" << (itInput->first / 100) % 100 << "-" << itInput->first % 100 << " => " << itInput->second << " = " << itInput->second * closestValue << std::endl;
+        }
     }
 }
+
 
 
 unsigned int BitcoinExchange::inputDateValue(std::string &value) {
@@ -142,7 +163,73 @@ float BitcoinExchange::inputPriceValue(std::string &value){
     return amount;
 }
 
-void dateControl(unsigned int &date){
+
+bool BitcoinExchange::dateControl(unsigned int date) {
+    int year = date / 10000;
+    int month = (date / 100) % 100;
+    int day = date % 100;
+
+    if (year < 2009 || year > 2140) {
+        return false;
+    }
+
+    if (month < 1 || month > 12) {
+        return false;
+    }
+
+    int maxDays;
+    switch (month) {
+        case 1: case 3: case 5: case 7: case 8: case 10: case 12:
+            maxDays = 31;
+            break;
+        case 4: case 6: case 9: case 11:
+            maxDays = 30;
+            break;
+        case 2:
+            maxDays = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 29 : 28;
+            break;
+        default:
+            return false;
+    }
+
+    if (day < 1 || day > maxDays) {
+        return false;
+    }
+
+    return true;
+}
+
+bool BitcoinExchange::amountControl(float &amount){
+
+    if  (amount < 0){
+      std::cerr << "Error: not a positive number. " << std::endl;
+        return 0;
+    }
+
+    if (amount > 1000){
+        std::cerr << "Error: too large a number. " << std::endl;
+        return 0;
+    }
+    return(1);
+}
 
 
+float BitcoinExchange::getClosestValue(unsigned int date) {
+    // dataBase'deki tarihi kontrol et
+    std::map<unsigned int, float>::iterator it = dataBase.lower_bound(date);
+
+    if (it != dataBase.end() && it->first == date) {
+        // Eğer tarih bulunduysa, o tarihin değerini döndür
+        return it->second;
+    }
+
+    if (it == dataBase.begin()) {
+        // Eğer tarihten önce bir tarih yoksa, hata ver
+        std::cerr << "Error: No earlier date available for " << date << std::endl;
+        return -1.0f; // Hata değeri
+    }
+
+    // Bir önceki tarihe git
+    --it;
+    return it->second;
 }
